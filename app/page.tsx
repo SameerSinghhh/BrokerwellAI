@@ -31,6 +31,9 @@ interface Document {
   created_at: string;
   extracted_text: ExtractionResult;
   storage_path: string;
+  email_subject?: string;
+  email_body?: string;
+  email_generated_at?: string;
 }
 
 interface ExtractedData {
@@ -96,7 +99,7 @@ export default function Home() {
       const { supabase } = await import("@/lib/supabase");
       const { data, error } = await supabase
         .from("documents")
-        .select("id, file_name, storage_path, page_count, character_count, created_at, extracted_text")
+        .select("id, file_name, storage_path, page_count, character_count, created_at, extracted_text, email_subject, email_body, email_generated_at")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -191,6 +194,40 @@ export default function Home() {
       // Step 3: Create a blob URL from the file for PDF display
       const pdfUrl = URL.createObjectURL(selectedFile);
 
+      // Step 4: Save the email to the database
+      if (processPdfData.document_id) {
+        console.log("Saving email to database...");
+        console.log("Document ID:", processPdfData.document_id);
+        console.log("Email subject:", generateEmailData.emailContent.subject);
+        
+        try {
+          const saveEmailResponse = await fetch("/api/save-email", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              document_id: processPdfData.document_id,
+              email_subject: generateEmailData.emailContent.subject,
+              email_body: generateEmailData.emailContent.body,
+            }),
+          });
+
+          const saveResult = await saveEmailResponse.json();
+          
+          if (!saveEmailResponse.ok) {
+            console.error("Failed to save email to database:", saveResult);
+          } else {
+            console.log("Email saved successfully!");
+          }
+        } catch (saveError) {
+          console.error("Error saving email:", saveError);
+        }
+      } else {
+        console.warn("No document_id returned from PDF processing");
+      }
+
       // Set the submission result to show side-by-side interface
       setSubmissionResult({
         extractedData: generateEmailData.extractedData,
@@ -200,8 +237,11 @@ export default function Home() {
         document_id: processPdfData.document_id,
       });
 
-      // Refresh documents list
-      fetchDocuments();
+      // Refresh documents list after a short delay to ensure save completes
+      setTimeout(() => {
+        fetchDocuments();
+      }, 500);
+      
       // Clear selected file
       setSelectedFile(null);
     } catch (err: any) {
@@ -232,31 +272,79 @@ export default function Home() {
       }
 
       setIsProcessing(true);
-      setProcessingStage("Loading document and generating email...");
+      setProcessingStage("Loading document...");
 
-      // Combine all pages into one text for OpenAI
-      const fullText = doc.extracted_text.pages
-        .map((p: ExtractedPage) => p.content)
-        .join("\n\n");
+      // Check if email already exists
+      let emailContent: EmailContent;
+      let extractedData: ExtractedData;
 
-      // Generate email with OpenAI
-      const generateEmailResponse = await fetch("/api/generate-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          extractedText: fullText,
-          fileName: doc.file_name,
-        }),
-      });
+      if (doc.email_subject && doc.email_body) {
+        // Use stored email - NO OpenAI call
+        console.log("Using stored email from database");
+        emailContent = {
+          subject: doc.email_subject,
+          body: doc.email_body,
+        };
 
-      const generateEmailData = await generateEmailResponse.json();
+        // Create a basic extracted data summary (not used in display but needed for interface)
+        extractedData = {
+          insured: "Stored document",
+          lines: [],
+          limits: "",
+          effectiveDate: "",
+          locations: [],
+        };
+      } else {
+        // Generate new email with OpenAI (first time viewing)
+        console.log("Generating email with OpenAI for first time");
+        setProcessingStage("Generating email with AI...");
 
-      if (!generateEmailResponse.ok) {
-        setError(generateEmailData.error || "Failed to generate email");
-        setIsProcessing(false);
-        return;
+        const fullText = doc.extracted_text.pages
+          .map((p: ExtractedPage) => p.content)
+          .join("\n\n");
+
+        const generateEmailResponse = await fetch("/api/generate-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            extractedText: fullText,
+            fileName: doc.file_name,
+          }),
+        });
+
+        const generateEmailData = await generateEmailResponse.json();
+
+        if (!generateEmailResponse.ok) {
+          setError(generateEmailData.error || "Failed to generate email");
+          setIsProcessing(false);
+          return;
+        }
+
+        emailContent = generateEmailData.emailContent;
+        extractedData = generateEmailData.extractedData;
+
+        // Save the email to database
+        const saveEmailResponse = await fetch("/api/save-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            document_id: doc.id,
+            email_subject: emailContent.subject,
+            email_body: emailContent.body,
+          }),
+        });
+
+        if (!saveEmailResponse.ok) {
+          console.error("Failed to save email to database");
+        } else {
+          // Refresh documents list to update the stored email
+          fetchDocuments();
+        }
       }
 
       // Get PDF URL from storage
@@ -283,8 +371,8 @@ export default function Home() {
 
       // Set the submission result to show side-by-side interface
       setSubmissionResult({
-        extractedData: generateEmailData.extractedData,
-        emailContent: generateEmailData.emailContent,
+        extractedData: extractedData,
+        emailContent: emailContent,
         pdfUrl: urlData.signedUrl,
         fileName: doc.file_name,
         document_id: doc.id,
@@ -383,6 +471,7 @@ export default function Home() {
               emailContent={submissionResult.emailContent}
               fileName={submissionResult.fileName}
               onBack={handleBackToUpload}
+              documentId={submissionResult.document_id}
             />
           ) : (
             <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -468,7 +557,7 @@ export default function Home() {
                               disabled={isProcessing}
                               className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {isProcessing ? "Loading..." : "View & Generate Email"}
+                              {isProcessing ? "Loading..." : "View Submission"}
                             </button>
                             <button
                               onClick={() => deleteDocument(doc.id, doc.storage_path)}

@@ -22,6 +22,7 @@ interface SideBySideInterfaceProps {
   emailContent: EmailContent;
   fileName: string;
   onBack: () => void;
+  documentId?: string;
 }
 
 export default function SideBySideInterface({
@@ -30,16 +31,64 @@ export default function SideBySideInterface({
   emailContent,
   fileName,
   onBack,
+  documentId,
 }: SideBySideInterfaceProps) {
   const [subject, setSubject] = useState(emailContent.subject);
   const [body, setBody] = useState(emailContent.body);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleCopy = async () => {
     const fullEmail = `Subject: ${subject}\n\n${body}`;
     await navigator.clipboard.writeText(fullEmail);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSave = async () => {
+    if (!documentId) {
+      alert('Cannot save: No document ID');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        alert('Not authenticated');
+        return;
+      }
+
+      const response = await fetch('/api/save-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          document_id: documentId,
+          email_subject: subject,
+          email_body: body,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save email');
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error: any) {
+      console.error('Save error:', error);
+      alert('Failed to save email: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -57,12 +106,6 @@ export default function SideBySideInterface({
             <h1 className="text-2xl font-bold text-gray-900 mt-2">Submission Review</h1>
             <p className="text-gray-600 text-sm">{fileName}</p>
           </div>
-          <button
-            onClick={handleCopy}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            {copied ? '✓ Copied!' : 'Copy Email'}
-          </button>
         </div>
       </div>
 
@@ -169,6 +212,13 @@ export default function SideBySideInterface({
                   className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
                   {copied ? '✓ Copied to Clipboard' : 'Copy to Clipboard'}
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !documentId}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Changes'}
                 </button>
                 <button
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"

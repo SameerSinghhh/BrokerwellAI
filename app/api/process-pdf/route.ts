@@ -174,6 +174,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save document metadata to database
+    console.log("Saving document metadata to database...");
     const { data: docData, error: docError } = await supabase
       .from("documents")
       .insert({
@@ -190,6 +191,10 @@ export async function POST(request: NextRequest) {
 
     if (docError) {
       console.error("Database error:", docError);
+      // Continue anyway but warn that document wasn't saved
+      console.warn("Document metadata was not saved to database");
+    } else {
+      console.log("Document saved with ID:", docData?.id);
     }
 
     console.log("Process complete!");

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { document_id, email_subject, email_body } = await request.json();
+    const { document_id, email_subject, email_body, extracted_data } = await request.json();
 
     if (!document_id || !email_subject || !email_body) {
       return NextResponse.json(
@@ -66,14 +66,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update the document with the email
+    // Update the document with the email and extracted data
+    const updateData: any = {
+      email_subject,
+      email_body,
+      email_generated_at: new Date().toISOString(),
+    };
+    
+    // Add extracted_data if provided
+    if (extracted_data) {
+      updateData.extracted_data = extracted_data;
+    }
+
     const { data, error } = await supabase
       .from('documents')
-      .update({
-        email_subject,
-        email_body,
-        email_generated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', document_id)
       .select()
       .single();

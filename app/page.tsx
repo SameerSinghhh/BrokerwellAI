@@ -34,6 +34,7 @@ interface Document {
   email_subject?: string;
   email_body?: string;
   email_generated_at?: string;
+  extracted_data?: ExtractedData;
 }
 
 interface ExtractedData {
@@ -99,7 +100,7 @@ export default function Home() {
       const { supabase } = await import("@/lib/supabase");
       const { data, error } = await supabase
         .from("documents")
-        .select("id, file_name, storage_path, page_count, character_count, created_at, extracted_text, email_subject, email_body, email_generated_at")
+        .select("id, file_name, storage_path, page_count, character_count, created_at, extracted_text, email_subject, email_body, email_generated_at, extracted_data")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -211,6 +212,7 @@ export default function Home() {
               document_id: processPdfData.document_id,
               email_subject: generateEmailData.emailContent.subject,
               email_body: generateEmailData.emailContent.body,
+              extracted_data: generateEmailData.extractedData,
             }),
           });
 
@@ -278,22 +280,14 @@ export default function Home() {
       let emailContent: EmailContent;
       let extractedData: ExtractedData;
 
-      if (doc.email_subject && doc.email_body) {
-        // Use stored email - NO OpenAI call
-        console.log("Using stored email from database");
+      if (doc.email_subject && doc.email_body && doc.extracted_data) {
+        // Use stored email and extracted data - NO OpenAI call
+        console.log("Using stored email and extracted data from database");
         emailContent = {
           subject: doc.email_subject,
           body: doc.email_body,
         };
-
-        // Create a basic extracted data summary (not used in display but needed for interface)
-        extractedData = {
-          insured: "Stored document",
-          lines: [],
-          limits: "",
-          effectiveDate: "",
-          locations: [],
-        };
+        extractedData = doc.extracted_data;
       } else {
         // Generate new email with OpenAI (first time viewing)
         console.log("Generating email with OpenAI for first time");
@@ -325,7 +319,7 @@ export default function Home() {
         emailContent = generateEmailData.emailContent;
         extractedData = generateEmailData.extractedData;
 
-        // Save the email to database
+        // Save the email and extracted data to database
         const saveEmailResponse = await fetch("/api/save-email", {
           method: "POST",
           headers: {
@@ -336,6 +330,7 @@ export default function Home() {
             document_id: doc.id,
             email_subject: emailContent.subject,
             email_body: emailContent.body,
+            extracted_data: extractedData,
           }),
         });
 

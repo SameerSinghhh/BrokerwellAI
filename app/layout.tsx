@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   description: "AI-powered platform for insurance brokers to streamline ACORD form submissions and multi-carrier outreach.",
 };
 
+// Force dynamic rendering for all pages
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{

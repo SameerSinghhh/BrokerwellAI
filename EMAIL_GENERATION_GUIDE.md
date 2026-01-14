@@ -133,3 +133,5 @@ Test the feature by:
 - PDFs are stored securely with Row Level Security (RLS) policies
 - Each user has a limit of 20 stored documents
 
+
+

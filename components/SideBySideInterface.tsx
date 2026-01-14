@@ -92,25 +92,27 @@ export default function SideBySideInterface({
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header - Keep it simple and below the Navigation */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-[1800px] mx-auto">
-          <button
-            onClick={onBack}
-            className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2 mb-2"
-          >
-            ← Back to Upload
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">Submission Review</h1>
-          <p className="text-gray-600 text-sm">{fileName}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <button
+              onClick={onBack}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
+            >
+              ← Back to Upload
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 mt-2">Submission Review</h1>
+            <p className="text-gray-600 text-sm">{fileName}</p>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 max-w-[1800px] mx-auto">
         {/* Left Panel - PDF Viewer */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 250px)' }}>
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
           <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Original Document</h2>
           </div>
@@ -168,7 +170,7 @@ export default function SideBySideInterface({
         </div>
 
         {/* Right Panel - Email Editor */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 250px)' }}>
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
           <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Generated Email</h2>
             <p className="text-xs text-gray-600 mt-1">Edit the email below as needed</p>

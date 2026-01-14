@@ -224,10 +224,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "100mb",
-    },
-  },
-};
+// Next.js 14 App Router configuration
+export const maxDuration = 60; // Maximum execution time in seconds
+export const dynamic = 'force-dynamic'; // Disable caching for this route

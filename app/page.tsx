@@ -487,7 +487,7 @@ export default function Home() {
                     Generate Submission Email
                   </h2>
                   <p className="text-gray-600 mb-6">
-                    Upload your ACORD PDF file and we'll automatically generate a professional submission email for you.
+                    Upload your ACORD PDF file and we&apos;ll automatically generate a professional submission email for you.
                   </p>
 
                   {/* File Upload Area */}

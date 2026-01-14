@@ -44,10 +44,10 @@ export default function ForgotPassword() {
               Check Your Email
             </h2>
             <p className="text-gray-600 mb-6">
-              We've sent password reset instructions to <strong>{email}</strong>
+              We&apos;ve sent password reset instructions to <strong>{email}</strong>
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              If you don't see the email, check your spam folder.
+              If you don&apos;t see the email, check your spam folder.
             </p>
             <Link
               href="/signin"
@@ -70,7 +70,7 @@ export default function ForgotPassword() {
               Forgot Password?
             </h2>
             <p className="text-gray-600">
-              No worries! Enter your email and we'll send you reset instructions.
+              No worries! Enter your email and we&apos;ll send you reset instructions.
             </p>
           </div>
 

@@ -9,7 +9,7 @@ export default function CTA() {
         </h2>
         <p className="text-xl text-primary-100 mb-10 max-w-2xl mx-auto">
           Join forward-thinking insurance brokers who are saving hours every day 
-          with BrokerwellAI's intelligent submission platform.
+          with BrokerwellAI&apos;s intelligent submission platform.
         </p>
         <div className="flex justify-center">
           <Link href="/signup">
